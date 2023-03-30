@@ -1,0 +1,24 @@
+# Python files
+*.pyc
+__pycache__/
+
+# Jupyter Notebook files
+.ipynb_checkpoints/
+*.ipynb
+
+# Environments
+venv/
+env/
+.venv/
+.pipenv/
+
+# Logs
+*.log
+
+# Temporary files
+*.swp
+.DS_Store
+
+# Ignore specific folders
+data/
+
