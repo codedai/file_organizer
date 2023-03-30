@@ -1,0 +1,11 @@
+pdf2doi
+PyPDF2
+cv2
+pdf2image
+layoutparser
+numpy
+fitz
+html2text
+openai
+tenacity
+tiktoken
