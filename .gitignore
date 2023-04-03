@@ -19,6 +19,10 @@ env/
 *.swp
 .DS_Store
 
+# PDFs
+*.pdf
+
 # Ignore specific folders
 data/
+demo/
 

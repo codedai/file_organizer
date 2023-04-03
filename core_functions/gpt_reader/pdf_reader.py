@@ -1,6 +1,7 @@
 import openai
 import tenacity
 import tiktoken
+import copy
 
 from .model_interface import OpenAIModel
 from .prompt import *
@@ -38,10 +39,12 @@ class PaperReader:
         htmls = ['<h1>{}</h1>'.format(title)]
 
         # Overall summary using title, abstract, paper_info, and introduction section information
-        _overall_summary_text = "Title" + paper.get_paper_title()
-        _overall_summary_text += "Abstract" + paper.section_text_dict['Abstract']
-        _overall_summary_text += "Paper Info" + paper.section_text_dict['paper_info']
-        _overall_summary_text += "Introduction" + paper.section_text_dict['Introduction']
+        _overall_summary_text = "Title: " + paper.get_paper_title()
+        _overall_summary_text += "Abstract: " + paper.section_text_dict['Abstract']
+        _overall_summary_text += "Paper Info: " + paper.section_text_dict['paper_info']
+        _overall_summary_text += "Introduction: " + paper.section_text_dict['Introduction']
+
+        # print("_overall_summary_text: ", _overall_summary_text)
 
         try:
             overall_summary = self.ask_chat_gpt(_overall_summary_text, OVERALL_SUMMARY_PROMPT_MESSAGES)
@@ -126,7 +129,7 @@ class PaperReader:
 
     @staticmethod
     def _split_prompt(prompt_message) -> tuple[dict, dict, dict]:
-        system_prompt, assistant_prompt, user_prompt = prompt_message.copy()
+        system_prompt, assistant_prompt, user_prompt = copy.deepcopy(prompt_message)
         if system_prompt['role'] != 'system':
             raise ValueError("system_prompt['role'] should be 'system'")
         if assistant_prompt['role'] != 'assistant':

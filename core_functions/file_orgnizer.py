@@ -14,7 +14,7 @@ def move_file_to_new_folder(old_folder_path: str, new_folder_path: str, old_file
     return old_title_new_folder
 
 
-def organize_files_in_old_folder(old_folder_path: str, new_folder_name: str, paper_reader: PaperReader = None) -> \
+def organize_files_in_old_folder(old_folder_path: str, new_folder_name: str, paper_reader: PaperReader = None, note_type: str = 'html' or 'md') -> \
         tuple[str, list]:
     """
     Make a new folder under the past folder path
@@ -41,18 +41,26 @@ def organize_files_in_old_folder(old_folder_path: str, new_folder_name: str, pap
     for f in files_and_dirs:
         if f.endswith('.pdf'):
             old_title_new_folder = move_file_to_new_folder(old_folder_path, new_folder_path, f)
+
             # create the new file name with stored file title in the form of <Year>-<Authors>-<Title>.pdf
+
             if paper_reader is not None:
                 paper = PaperInfo(old_title_new_folder, booster=True)
-                html_notes.append(
-                    {
+                paper.update_paper_info_use_doi()
+                try:
+                    _note = paper_reader.read_with_chat_gpt(paper)
+                except Exception as e:
+                    print(e)
+                    _note = "Error: " + str(e)
+                _note_dict = {
                         'Paper': paper,
-                        'Notes': paper_reader.read_with_chat_gpt(paper)
+                        'Notes': _note
                     }
-                )
+                save_note_to_file(_note_dict, new_folder_path, note_type=note_type)
+                html_notes.append(_note_dict)
             else:
                 paper = PaperInfo(old_title_new_folder)
-            paper.update_paper_info_use_doi()
+                paper.update_paper_info_use_doi()
 
             new_file_title = paper.get_file_title() + ".pdf"
 
@@ -66,21 +74,21 @@ def organize_files_in_old_folder(old_folder_path: str, new_folder_name: str, pap
     return new_folder_path, html_notes
 
 
-def save_notes_to_files(html_notes: list, folder_path: str, note_type: str = 'html' or 'md'):
+def save_note_to_file(html_note: dict, folder_path: str, note_type: str = 'html' or 'md'):
     note_folder_path = os.path.join(folder_path, 'notes')
     if not os.path.exists(note_folder_path):
         os.makedirs(note_folder_path)
 
-    for note in html_notes:
-        paper = note['Paper']
-        html = note['Notes']
-        if note_type == 'md':
-            html = html2text.html2text(html)
-            with open(os.path.join(note_folder_path, paper.get_file_title() + '.md'), 'w') as f:
-                f.write(html)
-        else:
-            with open(os.path.join(note_folder_path, paper.get_file_title() + '.html'), 'w') as f:
-                f.write(html)
+    paper = html_note['Paper']
+    html = html_note['Notes']
+
+    if note_type == 'md':
+        html = html2text.html2text(html)
+        with open(os.path.join(note_folder_path, paper.get_file_title() + '.md'), 'w') as f:
+            f.write(html)
+    else:
+        with open(os.path.join(note_folder_path, paper.get_file_title() + '.html'), 'w') as f:
+            f.write(html)
 
 
 if __name__ == '__main__':

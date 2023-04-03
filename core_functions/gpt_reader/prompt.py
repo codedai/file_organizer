@@ -37,8 +37,7 @@ OVERALL_SUMMARY_PROMPT_MESSAGES = [
                  2. list all the authors' names
                  3. mark the first author's affiliation             
                  4. mark the keywords of this article
-                 5. link to the paper, Github code link (if available, fill in Github:None if not)
-                 6. summarize according to the following four points.
+                 5. summarize according to the following four points.
                     - (1):What is the research background of this article?
                     - (2):What are the past methods? What are the problems with them? Is the approach well motivated?
                     - (3):What is the research methodology proposed in this paper?
@@ -49,8 +48,7 @@ OVERALL_SUMMARY_PROMPT_MESSAGES = [
                  2. Authors: xxx\n\n
                  3. Affiliation: xxx\n\n                 
                  4. Keywords: xxx\n\n   
-                 5. Urls: xxx or xxx , xxx \n\n      
-                 6. Summary: \n\n
+                 5. Summary: \n\n
                     - (1):xxx;\n 
                     - (2):xxx;\n 
                     - (3):xxx;\n  
@@ -70,13 +68,13 @@ METHOD_SUMMARY_PROMPT_MESSAGES = [
      "content": "This is the <summary> and <Method> part of an English document, where <summary> you have summarized, "
                 "but the <Methods> part, I need your help to read and summarize the following questions. {clip_text}"},
     {"role": "user", "content": """                 
-         7. Describe in detail the methodological idea of this article. For example, its steps are.
+         6. Describe in detail the methodological idea of this article. For example, its steps are.
             - (1):...
             - (2):...
             - (3):...
             - .......
          Follow the format of the output that follows: 
-         7. Methods: \n\n
+         6. Methods: \n\n
             - (1):xxx;\n 
             - (2):xxx;\n 
             - (3):xxx;\n  
@@ -98,13 +96,13 @@ CONCLUSION_SUMMARY_PROMPT_MESSAGES = [
                 "already summarized, but <conclusion> part, I need your help to summarize the following "
                 "questions: {clip_text}"},
     {"role": "user", "content": """                 
-           8. Make the following summary.
+           7. Make the following summary.
               - (1):What is the significance of this piece of work?
               - (2):Summarize the strengths and weaknesses of this article in three dimensions: innovation point, 
               performance, and workload.                   
               .......
            Follow the format of the output later: 
-           8. Conclusion: \n\n
+           7. Conclusion: \n\n
               - (1):xxx;\n                     
               - (2):Innovation point: xxx; Performance: xxx; Workload: xxx;\n                      
 
