@@ -1,4 +1,5 @@
 from utils import *
+from collections import defaultdict
 
 
 class PaperInfo:
@@ -16,6 +17,26 @@ class PaperInfo:
         self._date = ""
         self._event = ""
 
+        # Define a list of section names to be found
+        self.section_list = ["Abstract",
+                             'Introduction', 'Related Work', 'Background',
+                             "Preliminary", "Problem Formulation",
+                             'Methods', 'Methodology', "Method", 'Approach', 'Approaches',
+                             # exp
+                             "Materials and Methods", "Experiment Settings",
+                             'Experiment', "Experimental Results", "Evaluation", "Experiments",
+                             "Results", 'Findings', 'Data Analysis',
+                             "Discussion", "Results and Discussion", "Conclusion", "Conclusions",
+                             "Conclusion and Future Work",
+                             'References']
+
+        self.regex_list = [
+            r"^(?P<title_number>m{0,4}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3}))\.[\s]*(?P<title_main>[\w\s]{3,})$",
+            r"^(?P<title_number>(M|CM|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3}))\.[\s]*(?P<title_main>[\w\s]{3,})$",
+            r"^(?P<title_number>\d+)\.[\s]*(?P<title_main>[\w\s]+)$",
+            r"^[\s]*(?P<title_main>[\w\s]{3,})$"
+        ]
+
         self._file_title = self._create_file_title()  # File name: <Year>-<Authors>-<Title>.pdf
 
         # Variables for section reading
@@ -23,10 +44,10 @@ class PaperInfo:
         self.title_page = None
         self.section_text_dict = None
         self.section_page_dict = None
-        self.all_text = None
         self.text_list = None
         self.pdf = None
         self.abs = ''
+        self.paper_info = ''
 
         if booster:
             # Build up the base for applying ChatGPT
@@ -40,6 +61,9 @@ class PaperInfo:
 
     def get_num_pages(self):
         return self._num_pages
+
+    def get_section_titles(self):
+        return self.section_text_dict.keys()
 
     def update_paper_path(self, new_path: str):
         # TODO: varify the content of the new file is the same as the old one
@@ -65,7 +89,6 @@ class PaperInfo:
         self.pdf = fitz.open(self.paper_path)
         self._title = self.get_title()
         self.text_list = [page.get_text().replace("A B S T R A C T", "Abstract") for page in self.pdf]
-        self.all_text = ' '.join(self.text_list)
         self.section_page_dict = self._get_all_page_index()
         # print("section_page_dict", self.section_page_dict)
         self.section_text_dict = self._get_all_page()
@@ -73,6 +96,74 @@ class PaperInfo:
         self.section_text_dict.update({"paper_info": self.get_paper_info()})
         self._file_title = self._create_file_title()
         self.pdf.close()
+
+    def parse_pdf_beta(self):
+        # Section extraction
+        self.pdf = fitz.open(self.paper_path)
+        self._title = self.get_title()
+
+        # Extract section titles
+        self.section_text_dict = self._get_sections_list()
+        self.paper_info = self.get_paper_info()
+
+        self.pdf.close()
+
+    def _get_sections_list(self):
+        """
+        Update the self.section_list
+        Returns:
+
+        """
+        intro_size = 0
+        intro_font = None
+        title_reg = None
+        abs_emp_flag = True
+        sections = []
+        sections_content = defaultdict(str)
+
+        for page_index, page in enumerate(self.pdf):
+            for block in page.get_text('dict')['blocks']:
+                if block['type'] == 0 and len(block['lines']):
+                    for line in block['lines']:
+                        if len(line['spans']):
+                            text, size_set, font_set = self.convert_into_line(line['spans'])
+                            if abs_emp_flag and 'abstract' in text.replace(" ", "").lower():
+                                sections.append('Abstract')
+                            elif not intro_font:
+                                intro, reg = self.find_intro(text)
+                                if intro:
+                                    sections.append('Introduction')
+                                    title_reg = reg
+                                    intro_size = size_set[0]
+                                    intro_font = font_set[0]
+                            else:
+                                if size_set[0] == intro_size and font_set[0] == intro_font:
+                                    match = re.match(title_reg, text)
+                                    if match:
+                                        p_title = match.group('title_main')
+                                        sections.append(p_title.lower().title())
+
+                            if len(sections):
+                                sections_content[sections[-1]] += text
+        return sections_content
+
+    @staticmethod
+    def convert_into_line(spans):
+        text = ''
+        size_set = []
+        font_set = []
+        for span in spans:
+            text += span['text']
+            size_set.append(span['size'])
+            font_set.append(span['font'])
+        return text, size_set, font_set
+
+    def find_intro(self, line):
+        for reg in self.regex_list:
+            _match = re.match(reg, line)
+            if _match and _match.group("title_main").replace(" ", "").lower() == 'introduction':
+                return _match.group("title_main"), reg
+        return None, None
 
     def get_paper_info(self):
         first_page_text = self.pdf[self.title_page].get_text()
@@ -84,27 +175,27 @@ class PaperInfo:
         return first_page_text
 
     def get_title(self):
-        max_font_size = 0 # Initialize the maximum font size to 0
+        max_font_size = 0  # Initialize the maximum font size to 0
 
         max_font_sizes = [0]
-        for page in self.pdf: # Iterate over each page
-            blocks = page.get_text("dict")["blocks"] # Get the list of text blocks
-            for block in blocks: # Iterate over each text block
-                if block["type"] == 0 and len(block['lines']): # If it is a text type
+        for page in self.pdf:  # Iterate over each page
+            blocks = page.get_text("dict")["blocks"]  # Get the list of text blocks
+            for block in blocks:  # Iterate over each text block
+                if block["type"] == 0 and len(block['lines']):  # If it is a text type
                     if len(block["lines"][0]["spans"]):
-                        font_size = block["lines"][0]["spans"][0]["size"] # Get the font size of the first line and
+                        font_size = block["lines"][0]["spans"][0]["size"]  # Get the font size of the first line and
                         # the first paragraph of text
                         max_font_sizes.append(font_size)
-                        if font_size > max_font_size: # If the font size is greater than the current maximum value
-                            max_font_size = font_size # Update the maximum value
+                        if font_size > max_font_size:  # If the font size is greater than the current maximum value
+                            max_font_size = font_size  # Update the maximum value
 
         max_font_sizes.sort()
         # print("max_font_sizes", max_font_sizes[-10:])
         cur_title = ''
-        for page in self.pdf: # Iterate over each page
-            blocks = page.get_text("dict")["blocks"] # Get the list of text blocks
-            for block in blocks: # Iterate over each text block
-                if block["type"] == 0 and len(block['lines']): # If it is a text type
+        for page in self.pdf:  # Iterate over each page
+            blocks = page.get_text("dict")["blocks"]  # Get the list of text blocks
+            for block in blocks:  # Iterate over each text block
+                if block["type"] == 0 and len(block['lines']):  # If it is a text type
                     if len(block["lines"][0]["spans"]):
                         # Update the string corresponding to the maximum value
                         cur_string = block["lines"][0]["spans"][0]["text"]
@@ -123,24 +214,13 @@ class PaperInfo:
         return title
 
     def _get_all_page_index(self):
-        # Define a list of section names to be found
-        section_list = ["Abstract",
-                        'Introduction', 'Related Work', 'Background',
-                        "Preliminary", "Problem Formulation",
-                        'Methods', 'Methodology', "Method", 'Approach', 'Approaches',
-                        # exp
-                        "Materials and Methods", "Experiment Settings",
-                        'Experiment',  "Experimental Results", "Evaluation", "Experiments",
-                        "Results", 'Findings', 'Data Analysis',
-                        "Discussion", "Results and Discussion", "Conclusion", "Conclusions",
-                        "Conclusion and Future Work",
-                        'References']
+
         # Initialize a dictionary to store the section names and their corresponding page numbers
         section_page_dict = {}
         # Iterate through each page of the document
         for page_index, cur_text in enumerate(self.text_list):
             # Iterate through the list of section names
-            for section_name in section_list:
+            for section_name in self.section_list:
                 # Convert the section name to uppercase
                 section_name_upper = section_name.upper()
                 section_regex = re.compile(rf"{section_name}\s*\n|\s{2,}|{section_name_upper}\s*\n|\s{2,}")

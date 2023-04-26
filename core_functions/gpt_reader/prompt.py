@@ -112,3 +112,38 @@ CONCLUSION_SUMMARY_PROMPT_MESSAGES = [
            to the actual requirements, if not, you can not write.                 
            """},
 ]
+
+TITLE_SELECTION_PROMPT_MESSAGES = [
+    {"role": "system",
+     "content": "You are a reviewer in the field of [{key_words}] and you need to critically review this "
+                "article"},
+    {"role": "assistant",
+     "content": "Here is the section titles from an English academic literature, where each title is enclosed by "
+                "double quotation, and separated by a comma: {titles}. I need your help to select out titles that are "
+                "most likely related to the {article_part} of the article. Do not select titles that are related to "
+                "introduction section, related works section, acknowledgements, abstract section and references "
+                "section."},
+    {"role": "user", "content": """
+           Choose the most related title from the following options: {titles}, 
+           If there is no related title, please respond with only "None".
+           
+           Follow the format of the output later: 
+           ["xxxx", .......]                     
+
+           Be sure to strictly follow the format, the corresponding content output to xxx, , ....... means fill 
+           in according to the actual requirements, if not, you can not write. The answer should be enclosed in square
+           brackets. If there is no related title, please respond with only "None".         
+           """},
+]
+
+SECTION_SUMMARY_PROMPT_MESSAGES = [
+    {"role": "system",
+     "content": "You are an expert in the field of [{key_words}] who can provide concise summaries of academic papers"},
+    {"role": "assistant",
+     "content": "I need your help to provide brief summaries in one paragraph and at most five sentences"
+                " of the section {section_title}: {section}"},
+    {"role": "user", "content": """
+    Please provide a brief summary for each of the following sections. Your summaries should be concise and
+    academic, avoiding repetition of the content already presented in the <summary> section.
+     """}
+]

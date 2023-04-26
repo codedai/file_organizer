@@ -1,9 +1,7 @@
 pdf2doi
 PyPDF2
-pdf2image
 numpy
 fitz
-html2text
 openai
 tenacity
 tiktoken

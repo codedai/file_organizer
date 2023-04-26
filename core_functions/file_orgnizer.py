@@ -70,6 +70,7 @@ def organize_files_in_old_folder(old_folder_path: str, new_folder_name: str, pap
             os.rename(old_title_new_folder, new_title_new_folder)
             paper.update_paper_path(new_title_new_folder)
             print("New file title: " + new_file_title)
+        break
 
     return new_folder_path, html_notes
 
